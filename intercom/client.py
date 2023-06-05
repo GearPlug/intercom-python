@@ -7,8 +7,8 @@ from intercom.exceptions import UnauthorizedError, WrongFormatInputError, Contac
 
 
 class Client(object):
-    URL = "https://api.rd.services/"
-    AUTH_ENDPOINT = "https://app.intercom.com/oauth?"
+    URL = "https://api.intercom.io/"
+    AUTH_URL = "https://app.intercom.com/oauth?"
     headers = {"Content-Type": "application/json", "Accept": "application/json"}
 
     def __init__(self, client_id=None, client_secret=None, access_token=None):
@@ -17,11 +17,11 @@ class Client(object):
         if access_token is not None:
             self.headers.update(Authorization=f"Bearer {access_token}")
 
-    def authorization_url(self, redirect_uri, state=None):
-        params = {"response_type": "code", "client_id": self.CLIENT_ID, "redirect_uri": redirect_uri}
+    def authorization_url(self, state=None):
+        params = {"response_type": "code", "client_id": self.CLIENT_ID}
         if state:
             params["state"] = state
-        return self.URL + self.AUTH_ENDPOINT + urlencode(params)
+        return self.AUTH_URL + urlencode(params)
 
     def get_access_token(self, code):
         body = {"client_id": self.CLIENT_ID, "client_secret": self.CLIENT_SECRET, "code": code}
@@ -39,13 +39,55 @@ class Client(object):
     def list_all_contacts(self):
         return self.get("contacts")
 
+    def list_data_attributes(self, model, include_archived: bool = False):
+        """
+        model options are: contact, company, conversation
+        """
+        params = {"model": model, "include_archived": include_archived}
+        return self.get("data_attributes", params=params)
+
+    def list_tags(self):
+        return self.get("tags")
+
     def filter_contacts(self, field, operator, value):
         """
-        field options: https://developers.intercom.com/intercom-api-reference/reference/searchcontacts  
+        field options: https://developers.intercom.com/intercom-api-reference/reference/searchcontacts
         operator options: =, !=, IN, NIN, <, >, ~, !~, ^, $
         """
-        body = {"field": field, "operator": operator, "value": value}
-        return self.post("auth/eagle/token", data=json.dumps(body))
+        body = {"query": {"field": field, "operator": operator, "value": value}}
+        return self.post("contacts/search", data=json.dumps(body))
+
+    def create_contact(
+        self,
+        role: str,
+        email: str,
+        external_id: str = None,
+        phone: str = None,
+        name: str = None,
+        avatar: str = None,
+        signed_up_at: int = None,
+        last_seen_at: int = None,
+        owner_id: int = None,
+        unsubscribed: bool = None,
+        custom_attributes: dict = None,
+    ):
+        """
+        role options are: 'user' and 'lead'
+        signed_up_at and last_seen_at use epoch time stamp. For example: 1685986703 equals Monday, 5 June 2023 17:38:23
+        custom_attributes dict structure:
+            {"field_name": "field_value", "field_name": "field_value", ...}
+        """
+        args = locals()
+        body = self.set_form_data(args)
+        return self.post("contacts", data=json.dumps(body))
+
+    def add_tag_to_contact(self, contact_id, tag_id):
+        body = {"id": tag_id}
+        return self.post(f"contacts/{contact_id}/tags", data=json.dumps(body))
+
+    def create_note(self, contact_id, text):
+        body = {"body": text}
+        return self.post(f"contacts/{contact_id}/notes", data=json.dumps(body))
 
     def get(self, endpoint, **kwargs):
         response = self.request("GET", endpoint, **kwargs)
@@ -92,3 +134,10 @@ class Client(object):
         if status_code == 500:
             raise Exception
         return r
+
+    def set_form_data(self, args):
+        data = {}
+        for arg in args:
+            if args[arg] is not None and arg != "self":
+                data.update({f"{arg}": args[arg]})
+        return data
