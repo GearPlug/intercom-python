@@ -1,5 +1,5 @@
 [tool.poetry]
-name = "intercom-python"
+name = "intercom-python-2"
 version = "0.1.0"
 description = "API wrapper for intercom written in Python"
 authors = ["Juan Carlos Rios <juankrios15@gmail.com>"]
