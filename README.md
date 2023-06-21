@@ -5,7 +5,7 @@
 This library uses Oauth2 for authentication.
 ## Installing
 ```
-pip install intercom-python
+pip install intercom-python-2
 ```
 ## Usage
 ```python
