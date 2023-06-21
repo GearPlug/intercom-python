@@ -17,10 +17,13 @@ class Client(object):
         if access_token is not None:
             self.headers.update(Authorization=f"Bearer {access_token}")
 
-    def authorization_url(self, state=None):
+    def authorization_url(self, redirect_uri=None, state=None):
         params = {"response_type": "code", "client_id": self.CLIENT_ID}
         if state:
             params["state"] = state
+        if redirect_uri:
+            params["redirect_uri"] = state
+
         return self.AUTH_URL + urlencode(params)
 
     def get_access_token(self, code):
