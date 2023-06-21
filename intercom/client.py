@@ -22,7 +22,7 @@ class Client(object):
         if state:
             params["state"] = state
         if redirect_uri:
-            params["redirect_uri"] = state
+            params["redirect_uri"] = redirect_uri
 
         return self.AUTH_URL + urlencode(params)
 
